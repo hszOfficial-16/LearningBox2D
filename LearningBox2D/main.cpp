@@ -36,7 +36,7 @@ int main()
 	b2BodyDef bodyDef;
 	bodyDef.type = b2_dynamicBody;
 	bodyDef.position.Set(40.0f, 10.0f);
-	bodyDef.angle = (b2_pi / 4.0f);
+	bodyDef.angle = (b2_pi / 6.0f);
 	b2Body* body = world.CreateBody(&bodyDef);
 
 	b2PolygonShape dynamicBox;
@@ -77,6 +77,10 @@ int main()
 		}
 
 		world.Step(timeStep, velocityIterations, positionIterations);
+
+		// 这里减去的 50.0f 是贴图的宽度，因为渲染图片的位置在左上角
+		// 而乘的 10.0f 则是我这里需要将 1m 换算为 10 像素
+		// 换算关系视具体情况而定
 		dRect.x = (body->GetPosition().x * 10.0f) - 50.0f;
 		dRect.y = 300.0f - (body->GetPosition().y * 10.0f) - 50.0f;
 		float angle = body->GetAngle() * (180.0f / b2_pi);
@@ -91,6 +95,9 @@ int main()
 		SDL_RenderPresent(pRenderer);
 	}
 
+
+	// 安全退出
+	body = nullptr; groundBody = nullptr;
 	SDL_DestroyTexture(pTexture); pTexture = nullptr;
 	SDL_DestroyRenderer(pRenderer); pRenderer = nullptr;
 	SDL_DestroyWindow(pWindow); pWindow = nullptr;
