@@ -13,14 +13,59 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="源文件\scenes">
+      <UniqueIdentifier>{677e69d4-6b06-432a-a3f4-5321945c660c}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="CameraUI.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="scene.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="character.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="graphic.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="settings.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="listener.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="test.cpp">
+      <Filter>源文件\scenes</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="main.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="CameraUI.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="scene.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="character.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="game_math.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="graphic.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="settings.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="listener.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

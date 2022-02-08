@@ -1,106 +1,88 @@
 #include "main.h"
 using namespace std;
 
-#undef main
-int main()
+void InitGame()
 {
 	// SDL 初始化
 	SDL_Init(SDL_INIT_EVERYTHING);
-	SDL_Window* pWindow = SDL_CreateWindow("Box2D's test",
-		SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 
-		800, 600, SDL_WINDOW_SHOWN);
-	SDL_Renderer* pRenderer = 
-		SDL_CreateRenderer(pWindow, -1, SDL_RENDERER_ACCELERATED);
-	SDL_SetRenderDrawBlendMode(pRenderer, SDL_BLENDMODE_BLEND);
+	g_pWindow = SDL_CreateWindow("Box2D's test",
+		SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
+		g_settings.m_nWindowWidth, g_settings.m_nWindowHeight, SDL_WINDOW_SHOWN);
+	g_pRenderer =
+		SDL_CreateRenderer(g_pWindow, -1, SDL_RENDERER_ACCELERATED);
+	SDL_SetRenderDrawBlendMode(g_pRenderer, SDL_BLENDMODE_BLEND);
 	SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "best");
+}
 
-	// 加载我们的箱子朋友
-	SDL_Surface* pSurface = IMG_Load("box.png");
-	SDL_Texture* pTexture = SDL_CreateTextureFromSurface(pRenderer, pSurface);
+void RegisterContactEvent()
+{
 
-	// box2d 世界初始化
-	b2Vec2 gravity(0.0f, -10.0f);
-	b2World world(gravity);
+}
 
-	// 地面刚体
-	b2BodyDef groundBodyDef;
-	groundBodyDef.position.Set(40.0f, -30.0f);
-	b2Body* groundBody = world.CreateBody(&groundBodyDef);
-
-	b2PolygonShape groundBox;
-	groundBox.SetAsBox(40.0f, 5.0f);
-
-	groundBody->CreateFixture(&groundBox, 0.0f);
-
-	// 动态刚体
-	b2BodyDef bodyDef;
-	bodyDef.type = b2_dynamicBody;
-	bodyDef.position.Set(40.0f, 10.0f);
-	bodyDef.angle = (b2_pi / 6.0f);
-	b2Body* body = world.CreateBody(&bodyDef);
-
-	b2PolygonShape dynamicBox;
-	dynamicBox.SetAsBox(5.0f, 5.0f);
-
-	b2FixtureDef fixtureDef;
-	fixtureDef.shape = &dynamicBox;
-	fixtureDef.density = 1.0f;
-	fixtureDef.friction = 0.5f;
-	fixtureDef.restitution = 0.5f;
-	body->CreateFixture(&fixtureDef);
-
-	// 初始设置
-	bool isQuit = false;
-	float timeStep = 1.0f / 60.0f;
-	int velocityIterations = 8;
-	int positionIterations = 3;
-	SDL_Event theEvent;
-	SDL_Rect sRect = { 0, 0, 64, 64 };
-	SDL_FRect dRect = { 0.0f, 0.0f, 100.0f, 100.0f };
-	SDL_FPoint anchor = { 50.0f, 50.0f };
-
-	while (!isQuit)
+void RegisterEssentialListeners()
+{
+	Listener* listenQuit = nullptr;
 	{
-		Uint32 theFrameStart = SDL_GetTicks();
-		SDL_RenderClear(pRenderer);
+		listenQuit = new Listener(SDL_QUIT, [](SDL_Event* event) { g_settings.m_bIsQuit = true; });
+		ListenerManager::GetInstance().RegisterStatic(listenQuit);
+	}
+}
 
-		while (SDL_PollEvent(&theEvent))
+void QuitGame()
+{
+	// 安全退出
+	SDL_DestroyRenderer(g_pRenderer);
+	g_pRenderer = nullptr;
+	SDL_DestroyWindow(g_pWindow);
+	g_pWindow = nullptr;
+	SDL_Quit();
+}
+
+#undef main
+int main(int argc, char** argv)
+{
+	// 初始化各种库
+	InitGame();
+
+	// 注册所有基础的监听器（静态）
+	RegisterEssentialListeners();
+
+	std::chrono::duration<double> dFrameTime(0.0);
+	std::chrono::duration<double> dSleepAdjust(0.0);
+
+	GameScene* currentScene = SceneManager::GetInstance().SwitchTo(0);
+
+	while (!g_settings.m_bIsQuit)
+	{
+		std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
+
+		// 管理器向所有监听者分发事件
+		ListenerManager::GetInstance().NotifyAll();
+
+		// 进行该帧的逻辑更新
+		currentScene->Step();
+
+		// 渲染该帧的图像
+		currentScene->Render();
+
+		// 算出应当休眠的时间
+		std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
+		std::chrono::duration<double> dTarget(1.0 / g_settings.m_fHertz);
+		std::chrono::duration<double> dTimeUsed = t2 - t1;
+		std::chrono::duration<double> dSleepTime = dTarget - dTimeUsed + dSleepAdjust;
+		if (dSleepTime > std::chrono::duration<double>(0))
 		{
-			switch (theEvent.type)
-			{
-			case SDL_QUIT:
-				isQuit = true;
-				break;
-			default:
-				break;
-			}
+			std::this_thread::sleep_for(dSleepTime);
 		}
+		// 交换缓冲区，展示该帧画面
+		SDL_RenderPresent(g_pRenderer);
 
-		world.Step(timeStep, velocityIterations, positionIterations);
-
-		// 这里减去的 50.0f 是贴图的宽度，因为渲染图片的位置在左上角
-		// 而乘的 10.0f 则是我这里需要将 1m 换算为 10 像素
-		// 换算关系视具体情况而定
-		dRect.x = (body->GetPosition().x * 10.0f) - 50.0f;
-		dRect.y = 300.0f - (body->GetPosition().y * 10.0f) - 50.0f;
-		float angle = body->GetAngle() * (180.0f / b2_pi);
-		SDL_RenderCopyExF(pRenderer, pTexture,
-			&sRect, &dRect, angle, &anchor, SDL_FLIP_NONE);
-
-		Uint32 theFrameEnd = SDL_GetTicks();
-		if (theFrameEnd - theFrameStart < timeStep * 1000)
-		{
-			SDL_Delay(timeStep * 1000 - (theFrameEnd - theFrameStart));
-		}
-		SDL_RenderPresent(pRenderer);
+		// 根据直到当前的实际帧数和预期帧数的差来调整下一帧的休眠时间
+		std::chrono::steady_clock::time_point t3 = std::chrono::steady_clock::now();
+		dFrameTime = t3 - t1;
+		dSleepAdjust = 0.9 * dSleepAdjust + 0.1 * (dTarget - dFrameTime);
 	}
 
-
-	// 安全退出
-	body = nullptr; groundBody = nullptr;
-	SDL_DestroyTexture(pTexture); pTexture = nullptr;
-	SDL_DestroyRenderer(pRenderer); pRenderer = nullptr;
-	SDL_DestroyWindow(pWindow); pWindow = nullptr;
-	SDL_Quit();
+	QuitGame();
 	return 0;
 }
