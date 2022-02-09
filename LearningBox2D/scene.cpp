@@ -22,9 +22,13 @@ void GameScene::Step()
 	}
 
 	// 更新摄像头跟随的位置
-	if (m_pCamera->m_pMotorJoint && m_pCamera->m_pFollowBody)
+	if (m_pCamera->m_pFollowBody)
 	{
 		m_pCamera->m_pMotorJoint->SetLinearOffset(m_pCamera->m_pFollowBody->GetPosition());
+	}
+	else
+	{
+		m_pCamera->m_pMotorJoint->SetLinearOffset(m_pGround->GetPosition());
 	}
 
 	// 更新摄像头的焦距
@@ -109,22 +113,16 @@ void GameScene::Render()
 				(float)(pImage->GetTexture()->m_nHeight * m_pCamera->m_fZoom)
 			};
 			// 将 Box2D 的弧度换算为 SDL 所需要的度数
-			drawAngle = (*iter)->GetAngle() * (180.0f / b2_pi);
+			drawAngle = 360.0f - (*iter)->GetAngle() * 180.0f / b2_pi;
 			// 计算出图像的锚点
 			drawAnchor = {
 				(float)(pImage->GetTexture()->m_nWidth / 2 * m_pCamera->m_fZoom),
 				(float)(pImage->GetTexture()->m_nHeight / 2 * m_pCamera->m_fZoom)
 			};
 			// 判断其是否在摄像机的取景范围内，如果是则绘制该角色
-			if ((drawPoint.m_x + pImage->GetTexture()->m_nWidth / 2) * m_pCamera->m_fZoom >= 0 &&
-				(drawPoint.m_x - pImage->GetTexture()->m_nWidth / 2) * m_pCamera->m_fZoom <= g_settings.m_nWindowWidth &&
-				(drawPoint.m_y + pImage->GetTexture()->m_nHeight / 2) * m_pCamera->m_fZoom >= 0 &&
-				(drawPoint.m_y - pImage->GetTexture()->m_nHeight / 2) * m_pCamera->m_fZoom <= g_settings.m_nWindowHeight)
-			{
-				SDL_RenderCopyExF(g_pRenderer, pImage->GetTexture()->m_pTexture,
-					&sourceRect, &drawRect, drawAngle, &drawAnchor,
-					(*iter)->GetFlip());
-			}
+			SDL_RenderCopyExF(g_pRenderer, pImage->GetTexture()->m_pTexture,
+				&sourceRect, &drawRect, drawAngle, &drawAnchor,
+				(*iter)->GetFlip());
 		}
 	}
 }
@@ -160,12 +158,7 @@ void GameScene::SortCharacters()
 
 void GameScene::CameraFollow(b2Body* body)
 {
-	b2MotorJointDef motorJointDef;
-	motorJointDef.bodyA = m_pGround;
-	motorJointDef.bodyB = m_pCamera->m_pBody;
-	motorJointDef.maxForce = 4000.0f;
 	m_pCamera->m_pFollowBody = body;
-	m_pCamera->m_pMotorJoint = (b2MotorJoint*)m_pWorld->CreateJoint(&motorJointDef);
 }
 
 void GameScene::SetCameraZoomSpeed(const float& speed)
@@ -194,13 +187,17 @@ GameScene::GameScene()
 
 	// 创建摄像机
 	m_pCamera = new GameCamera();
-	m_pCamera->m_pMotorJoint = nullptr;
-	m_pCamera->m_pFollowBody = nullptr;
 	m_pCamera->m_pBody = m_pWorld->CreateBody(&bodyDef);
 	m_pCamera->m_fZoom = 1.0f;
 	m_pCamera->m_fZoomSpeed = 1.0f;
-	m_pCamera->m_fZoomAcceleration = 0.008f;
+	m_pCamera->m_fZoomAcceleration = 0.007f;
 	m_pCamera->m_vec2ZoomLimit = { 0.1f, 10.0f };
+
+	b2MotorJointDef motorJointDef;
+	motorJointDef.bodyA = m_pGround;
+	motorJointDef.bodyB = m_pCamera->m_pBody;
+	motorJointDef.maxForce = 4000.0f;
+	m_pCamera->m_pMotorJoint = (b2MotorJoint*)m_pWorld->CreateJoint(&motorJointDef);
 
 	// 摄像机的质量数据
 	b2MassData massData = { 1.0f, {0, 0}, 0 };

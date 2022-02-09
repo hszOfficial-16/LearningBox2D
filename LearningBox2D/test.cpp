@@ -1,5 +1,7 @@
 #include "scene.h"
 
+#include <iostream>
+
 class TestScene : public GameScene
 {
 public:
@@ -15,18 +17,29 @@ public:
 			ground = new Character(GetWorld(), &bodyDef);
 
 			b2PolygonShape shape;
-			shape.SetAsBox(6.0f, 0.5f);
+			shape.SetAsBox(7.0f, 0.5f);
 			ground->GetBody()->CreateFixture(&shape, 0.0f);
 			ground->AddImage(groundImage);
 			AddCharacter(ground);
+
+			b2EdgeShape bound;
+			bound.SetTwoSided({ -10.0f, -10.0f }, { 10.0f, -10.0f });
+			ground->GetBody()->CreateFixture(&bound, 0.0f);
+			bound.SetTwoSided({ -10.0f, 10.0f }, { 10.0f, 10.0f });
+			ground->GetBody()->CreateFixture(&bound, 0.0f);
+			bound.SetTwoSided({ -10.0f, -10.0f }, { -10.0f, 10.0f });
+			ground->GetBody()->CreateFixture(&bound, 0.0f);
+			bound.SetTwoSided({ 10.0f, -10.0f }, { 10.0f, 10.0f });
+			ground->GetBody()->CreateFixture(&bound, 0.0f);
 		}
 
 		Character* myBox[5];
+
 		for (int i = 0; i < 5; i++)
 		{
 			b2BodyDef bodyDef;
-			bodyDef.angle = b2_pi / (i + 1);
 			bodyDef.type = b2_dynamicBody;
+			bodyDef.angle = b2_pi / (6 - i);
 			bodyDef.position = { -5.0f + 2.0f * i, 3.0f };
 			myBox[i] = new Character(GetWorld(), &bodyDef);
 
@@ -34,7 +47,7 @@ public:
 			shape.SetAsBox(0.5f, 0.5f);
 			b2FixtureDef fixtureDef;
 			fixtureDef.density = 1.0f;
-			fixtureDef.restitution = 0.8f;
+			fixtureDef.restitution = 1.1f;
 			fixtureDef.shape = &shape;
 			myBox[i]->GetBody()->CreateFixture(&fixtureDef);
 			myBox[i]->AddImage(box);
@@ -56,7 +69,32 @@ public:
 			ListenerManager::GetInstance().Register(listenWheel);
 		}
 
-		CameraFollow(myBox[0]->GetBody());
+		Listener* listenKeyboard = nullptr;
+		{
+			listenKeyboard = new Listener(SDL_KEYDOWN, [=](SDL_Event* pEvent) {
+				switch (pEvent->key.keysym.sym)
+				{
+				case SDLK_1:
+					CameraFollow(myBox[0]->GetBody());
+					break;
+				case SDLK_2:
+					CameraFollow(myBox[1]->GetBody());
+					break;
+				case SDLK_3:
+					CameraFollow(myBox[2]->GetBody());
+					break;
+				case SDLK_4:
+					CameraFollow(myBox[3]->GetBody());
+					break;
+				case SDLK_5:
+					CameraFollow(myBox[4]->GetBody());
+					break;
+				case SDLK_0:
+					CameraFollow(nullptr);
+				}
+				});
+			ListenerManager::GetInstance().Register(listenKeyboard);
+		}
 	}
 
 	void Step() override
