@@ -80,14 +80,27 @@ GameTexture* GameImage::GetTexture()
 	return TextureManager::GetInstance().LoadTexture(m_vecFrames[m_nIndex].m_strFileName);
 }
 
+void GameImage::IncreaseCount()
+{
+	m_nReferenceCount++;
+}
+
+void GameImage::ReduceCount()
+{
+	if (--m_nReferenceCount <= 0)
+	{
+		GameImage::~GameImage();
+	}
+}
+
 GameImage::GameImage(std::string file) :
-	m_nIndex(0), m_nProgress(0)
+	m_nIndex(0), m_nProgress(0), m_nReferenceCount(0)
 {
 	m_vecFrames.push_back({ file, 0 });
 }
 
 GameImage::GameImage(std::initializer_list<GameFrame> ilFrames) :
-	m_nIndex(0), m_nProgress(0)
+	m_nIndex(0), m_nProgress(0), m_nReferenceCount(0)
 {
 	for (std::initializer_list<GameFrame>::iterator iter = ilFrames.begin();
 		iter != ilFrames.end(); iter++)

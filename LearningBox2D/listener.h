@@ -30,7 +30,7 @@ private:
 public:
 	Listener();
 	Listener(Uint32, std::function<void(SDL_Event*)>);
-	~Listener();
+	~Listener() = default;
 
 	friend class ListenerManager;
 };
@@ -44,10 +44,13 @@ public:
 	void					RegisterStatic(Listener*);
 	/// 注销一个非静态监听器
 	void					Unregister(size_t);
+	/// 注销一个静态监听器
+	void					UnregisterStatic(size_t);
 	/// 读取当前所有的事件并分发给所有监听者
 	void					NotifyAll();
 	/// 清空所有非静态监听器
 	void					Clear();
+
 private:
 	std::vector<Listener*>	m_vecListeners;
 	// 用于管理静态监听者，他们负责游戏中基本的事件监听

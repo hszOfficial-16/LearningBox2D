@@ -1,5 +1,8 @@
 #include "scene.h"
 
+#include <algorithm>
+#include <iostream>
+
 // GameScene
 
 void GameScene::Step()
@@ -17,17 +20,60 @@ void GameScene::Step()
 			pCharacter->SetAngle(pBody->GetAngle());
 		}
 	}
-}
-
-void GameScene::Render()
-{
-	SDL_RenderClear(g_pRenderer);
 
 	// 更新摄像头跟随的位置
 	if (m_pCamera->m_pMotorJoint && m_pCamera->m_pFollowBody)
 	{
 		m_pCamera->m_pMotorJoint->SetLinearOffset(m_pCamera->m_pFollowBody->GetPosition());
 	}
+
+	// 更新摄像头的焦距
+	
+	if (m_pCamera->m_fZoomSpeed > 1.0f)
+	{
+		if (m_pCamera->m_fZoomSpeed - m_pCamera->m_fZoomAcceleration > 1.0f)
+		{
+			m_pCamera->m_fZoomSpeed -= m_pCamera->m_fZoomAcceleration;
+		}
+		else
+		{
+			m_pCamera->m_fZoomSpeed = 1.0f;
+		}
+
+		if (m_pCamera->m_fZoom * m_pCamera->m_fZoomSpeed < m_pCamera->m_vec2ZoomLimit.m_y)
+		{
+			m_pCamera->m_fZoom *= m_pCamera->m_fZoomSpeed;
+		}
+		else
+		{
+			m_pCamera->m_fZoom = m_pCamera->m_vec2ZoomLimit.m_y;
+		}
+	}
+	else if (m_pCamera->m_fZoomSpeed < 1.0f)
+	{
+		if (m_pCamera->m_fZoomSpeed + m_pCamera->m_fZoomAcceleration < 1.0f)
+		{
+			m_pCamera->m_fZoomSpeed += m_pCamera->m_fZoomAcceleration;
+		}
+		else
+		{
+			m_pCamera->m_fZoomSpeed = 1.0f;
+		}
+
+		if (m_pCamera->m_fZoom * m_pCamera->m_fZoomSpeed > m_pCamera->m_vec2ZoomLimit.m_x)
+		{
+			m_pCamera->m_fZoom *= m_pCamera->m_fZoomSpeed;
+		}
+		else
+		{
+			m_pCamera->m_fZoom = m_pCamera->m_vec2ZoomLimit.m_x;
+		}
+	}
+}
+
+void GameScene::Render()
+{
+	SDL_RenderClear(g_pRenderer);
 
 	GameVec2	drawPoint;
 	float		drawAngle;
@@ -57,23 +103,23 @@ void GameScene::Render()
 			// 将数据封装为 SDL 需要的 SDL_FRect
 			drawRect =
 			{
-				drawPoint.m_x - (float)pImage->GetTexture()->m_nWidth / 2,
-				drawPoint.m_y - (float)pImage->GetTexture()->m_nHeight / 2,
-				(float)pImage->GetTexture()->m_nWidth,
-				(float)pImage->GetTexture()->m_nHeight
+				drawPoint.m_x - (float)(pImage->GetTexture()->m_nWidth / 2 * m_pCamera->m_fZoom),
+				drawPoint.m_y - (float)(pImage->GetTexture()->m_nHeight / 2 * m_pCamera->m_fZoom),
+				(float)(pImage->GetTexture()->m_nWidth * m_pCamera->m_fZoom),
+				(float)(pImage->GetTexture()->m_nHeight * m_pCamera->m_fZoom)
 			};
 			// 将 Box2D 的弧度换算为 SDL 所需要的度数
 			drawAngle = (*iter)->GetAngle() * (180.0f / b2_pi);
 			// 计算出图像的锚点
 			drawAnchor = {
-				(float)pImage->GetTexture()->m_nWidth / 2,
-				(float)pImage->GetTexture()->m_nHeight / 2
+				(float)(pImage->GetTexture()->m_nWidth / 2 * m_pCamera->m_fZoom),
+				(float)(pImage->GetTexture()->m_nHeight / 2 * m_pCamera->m_fZoom)
 			};
 			// 判断其是否在摄像机的取景范围内，如果是则绘制该角色
-			if (drawPoint.m_x + pImage->GetTexture()->m_nWidth / 2 >= 0 &&
-				drawPoint.m_x - pImage->GetTexture()->m_nWidth / 2 <= g_settings.m_nWindowWidth &&
-				drawPoint.m_y + pImage->GetTexture()->m_nHeight / 2 >= 0 &&
-				drawPoint.m_y - pImage->GetTexture()->m_nHeight / 2 <= g_settings.m_nWindowHeight)
+			if ((drawPoint.m_x + pImage->GetTexture()->m_nWidth / 2) * m_pCamera->m_fZoom >= 0 &&
+				(drawPoint.m_x - pImage->GetTexture()->m_nWidth / 2) * m_pCamera->m_fZoom <= g_settings.m_nWindowWidth &&
+				(drawPoint.m_y + pImage->GetTexture()->m_nHeight / 2) * m_pCamera->m_fZoom >= 0 &&
+				(drawPoint.m_y - pImage->GetTexture()->m_nHeight / 2) * m_pCamera->m_fZoom <= g_settings.m_nWindowHeight)
 			{
 				SDL_RenderCopyExF(g_pRenderer, pImage->GetTexture()->m_pTexture,
 					&sourceRect, &drawRect, drawAngle, &drawAnchor,
@@ -81,16 +127,6 @@ void GameScene::Render()
 			}
 		}
 	}
-}
-
-void GameScene::CameraFollow(b2Body* body)
-{
-	b2MotorJointDef motorJointDef;
-	motorJointDef.bodyA = m_pGround;
-	motorJointDef.bodyB = m_pCamera->m_pBody;
-	motorJointDef.maxForce = 4000.0f;
-	m_pCamera->m_pFollowBody = body;
-	m_pCamera->m_pMotorJoint = (b2MotorJoint*)m_pWorld->CreateJoint(&motorJointDef);
 }
 
 const GameVec2& GameScene::ConvertWorldToLocal(const GameVec2& worldPoint)
@@ -122,6 +158,26 @@ void GameScene::SortCharacters()
 		[](Character* a, Character* b)->bool { return a->GetZOrder() < b->GetZOrder(); });
 }
 
+void GameScene::CameraFollow(b2Body* body)
+{
+	b2MotorJointDef motorJointDef;
+	motorJointDef.bodyA = m_pGround;
+	motorJointDef.bodyB = m_pCamera->m_pBody;
+	motorJointDef.maxForce = 4000.0f;
+	m_pCamera->m_pFollowBody = body;
+	m_pCamera->m_pMotorJoint = (b2MotorJoint*)m_pWorld->CreateJoint(&motorJointDef);
+}
+
+void GameScene::SetCameraZoomSpeed(const float& speed)
+{
+	m_pCamera->m_fZoomSpeed = speed;
+}
+
+const float& GameScene::GetCameraZoom()
+{
+	return m_pCamera->m_fZoom;
+}
+
 GameScene::GameScene()
 {
 	m_pWorld = new b2World(b2Vec2(0.0f, -10.0f));
@@ -138,10 +194,13 @@ GameScene::GameScene()
 
 	// 创建摄像机
 	m_pCamera = new GameCamera();
-	m_pCamera->m_fZoom = 1.0f;
 	m_pCamera->m_pMotorJoint = nullptr;
 	m_pCamera->m_pFollowBody = nullptr;
 	m_pCamera->m_pBody = m_pWorld->CreateBody(&bodyDef);
+	m_pCamera->m_fZoom = 1.0f;
+	m_pCamera->m_fZoomSpeed = 1.0f;
+	m_pCamera->m_fZoomAcceleration = 0.008f;
+	m_pCamera->m_vec2ZoomLimit = { 0.1f, 10.0f };
 
 	// 摄像机的质量数据
 	b2MassData massData = { 1.0f, {0, 0}, 0 };

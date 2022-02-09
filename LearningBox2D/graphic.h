@@ -53,14 +53,20 @@ public:
 	void					SetDefault();
 	GameTexture*			GetTexture();
 
+	void					IncreaseCount();
+	void					ReduceCount();
+
 private:
 	size_t					m_nIndex;
 	unsigned int			m_nProgress;
 	std::vector<GameFrame>	m_vecFrames;
 
+	unsigned int			m_nReferenceCount;
+
 public:
 	GameImage(std::string);
 	GameImage(std::initializer_list<GameFrame>);
+	~GameImage() = default;
 };
 
 extern SDL_Window*		g_pWindow;

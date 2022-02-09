@@ -1,7 +1,5 @@
 #include "listener.h"
 
-#include <iostream>
-
 // Listener
 
 void Listener::Listen(Uint32 listenType, std::function<void(SDL_Event*)> callback)
@@ -18,14 +16,6 @@ Listener::Listener():
 Listener::Listener(Uint32 listenType, std::function<void(SDL_Event*)> callback):
 	m_emListenType(listenType), m_funcCallback(callback), m_nIndex(sizeof(size_t) - 1)
 {
-}
-
-Listener::~Listener()
-{
-	if (m_nIndex != sizeof(size_t) - 1 && m_emListenerType != Type::STATIC)
-	{
-		ListenerManager::GetInstance().Unregister(m_nIndex);
-	}
 }
 
 // Listener Manager
@@ -46,9 +36,18 @@ void ListenerManager::RegisterStatic(Listener* listener)
 
 void ListenerManager::Unregister(size_t index)
 {
+	delete m_vecListeners[index];
 	Listener* swapListener = m_vecListeners[m_vecListeners.size() - 1];
 	m_vecListeners[index] = swapListener;
 	m_vecListeners.pop_back();
+}
+
+void ListenerManager::UnregisterStatic(size_t index)
+{
+	delete m_vecStaticListeners[index];
+	Listener* swapListener = m_vecStaticListeners[m_vecStaticListeners.size() - 1];
+	m_vecStaticListeners[index] = swapListener;
+	m_vecStaticListeners.pop_back();
 }
 
 void ListenerManager::NotifyAll()

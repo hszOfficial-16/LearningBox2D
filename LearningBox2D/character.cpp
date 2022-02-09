@@ -100,13 +100,14 @@ void Character::DestroyBody()
 void Character::AddImage(GameImage* image)
 {
 	m_vecImages.push_back(image);
+	image->IncreaseCount();
 }
 
 void Character::DeleteImage(const int& index)
 {
 	std::vector<GameImage*>::iterator iter = m_vecImages.begin() + index;
 	m_vecImages.erase(iter);
-	delete (*iter);
+	m_vecImages[index]->ReduceCount();
 }
 
 Character::Character(GameVec2 position, float angle, int zOrder) :
@@ -134,6 +135,6 @@ Character::~Character()
 	for (std::vector<GameImage*>::iterator iter = m_vecImages.begin();
 		iter != m_vecImages.end(); iter++)
 	{
-		delete (*iter);
+		(*iter)->ReduceCount();
 	}
 }
