@@ -14,11 +14,6 @@ void InitGame()
 	SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "best");
 }
 
-void RegisterContactEvent()
-{
-
-}
-
 void RegisterEssentialListeners()
 {
 	Listener* listenQuit = nullptr;

@@ -96,3 +96,50 @@ ListenerManager::~ListenerManager()
 		delete (*iter);
 	}
 }
+
+Uint32 ContactListener::GetEventType()
+{
+	return m_eventType;
+}
+
+void ContactListener::BeginContact(b2Contact* contact)
+{
+	m_contactEvent.user.code = (Sint32)ContactType::BEGIN_CONTACT;
+	m_contactEvent.user.data1 = (void*)contact;
+	m_contactEvent.user.data2 = nullptr;
+	SDL_PushEvent(&m_contactEvent);
+}
+
+void ContactListener::EndContact(b2Contact* contact)
+{
+	m_contactEvent.user.code = (Sint32)ContactType::END_CONTACT;
+	m_contactEvent.user.data1 = (void*)contact;
+	m_contactEvent.user.data2 = nullptr;
+	SDL_PushEvent(&m_contactEvent);
+}
+
+void ContactListener::PreSolve(b2Contact* contact, const b2Manifold* oldManifold)
+{
+	m_contactEvent.user.code = (Sint32)ContactType::PRESOLVE;
+	m_contactEvent.user.data1 = (void*)contact;
+	m_contactEvent.user.data2 = (void*)oldManifold;
+	SDL_PushEvent(&m_contactEvent);
+}
+
+void ContactListener::PostSolve(b2Contact* contact, const b2ContactImpulse* impulse)
+{
+	m_contactEvent.user.code = (Sint32)ContactType::PRESOLVE;
+	m_contactEvent.user.data1 = (void*)contact;
+	m_contactEvent.user.data2 = (void*)impulse;
+	SDL_PushEvent(&m_contactEvent);
+}
+
+ContactListener::ContactListener()
+{
+	m_eventType = SDL_RegisterEvents(1);
+	if (m_eventType != ((Uint32)-1))
+	{
+		SDL_memset(&m_contactEvent, 0, sizeof(m_contactEvent));
+		m_contactEvent.type = m_eventType;
+	}
+}

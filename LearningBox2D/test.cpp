@@ -1,7 +1,5 @@
 #include "scene.h"
 
-#include <iostream>
-
 class TestScene : public GameScene
 {
 public:
@@ -23,24 +21,24 @@ public:
 			AddCharacter(ground);
 
 			b2EdgeShape bound;
-			bound.SetTwoSided({ -10.0f, -10.0f }, { 10.0f, -10.0f });
+			bound.SetTwoSided({ -20.0f, -20.0f }, { 20.0f, -20.0f });
 			ground->GetBody()->CreateFixture(&bound, 0.0f);
-			bound.SetTwoSided({ -10.0f, 10.0f }, { 10.0f, 10.0f });
+			bound.SetTwoSided({ -20.0f, 20.0f }, { 20.0f, 20.0f });
 			ground->GetBody()->CreateFixture(&bound, 0.0f);
-			bound.SetTwoSided({ -10.0f, -10.0f }, { -10.0f, 10.0f });
+			bound.SetTwoSided({ -20.0f, -20.0f }, { -20.0f, 20.0f });
 			ground->GetBody()->CreateFixture(&bound, 0.0f);
-			bound.SetTwoSided({ 10.0f, -10.0f }, { 10.0f, 10.0f });
+			bound.SetTwoSided({ 20.0f, -20.0f }, { 20.0f, 20.0f });
 			ground->GetBody()->CreateFixture(&bound, 0.0f);
 		}
 
-		Character* myBox[5];
+		Character* myBox[9];
 
-		for (int i = 0; i < 5; i++)
+		for (int i = 0; i < 9; i++)
 		{
 			b2BodyDef bodyDef;
 			bodyDef.type = b2_dynamicBody;
-			bodyDef.angle = b2_pi / (6 - i);
-			bodyDef.position = { -5.0f + 2.0f * i, 3.0f };
+			bodyDef.angle = b2_pi / (10 - i);
+			bodyDef.position = { -9.0f + 2.0f * i, 3.0f };
 			myBox[i] = new Character(GetWorld(), &bodyDef);
 
 			b2PolygonShape shape;
@@ -89,8 +87,21 @@ public:
 				case SDLK_5:
 					CameraFollow(myBox[4]->GetBody());
 					break;
+				case SDLK_6:
+					CameraFollow(myBox[5]->GetBody());
+					break;
+				case SDLK_7:
+					CameraFollow(myBox[6]->GetBody());
+					break;
+				case SDLK_8:
+					CameraFollow(myBox[7]->GetBody());
+					break;
+				case SDLK_9:
+					CameraFollow(myBox[8]->GetBody());
+					break;
 				case SDLK_0:
 					CameraFollow(nullptr);
+					break;
 				}
 				});
 			ListenerManager::GetInstance().Register(listenKeyboard);

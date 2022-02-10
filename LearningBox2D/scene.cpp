@@ -174,6 +174,9 @@ const float& GameScene::GetCameraZoom()
 GameScene::GameScene()
 {
 	m_pWorld = new b2World(b2Vec2(0.0f, -10.0f));
+	
+	// 设置该世界的碰撞监听器
+	m_pWorld->SetContactListener(&ContactListener::GetInstance());
 
 	// 在原点创建地面刚体
 	b2BodyDef groundDef;
